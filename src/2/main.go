@@ -9,59 +9,103 @@ import (
 	"strings"
 )
 
-type ReactorLevel struct {
-	Level     []int
-	Direction int
+type Reactor struct {
+	Reports []*ReactorReport
 }
 
-func NewReactorLevel(level []int) *ReactorLevel {
-	dir := level[1] - level[0]
-	return &ReactorLevel{Level: level, Direction: dir}
+func (rr *Reactor) AddReport(report *ReactorReport) {
+	rr.Reports = append(rr.Reports, report)
 }
 
-func (rl *ReactorLevel) DirectionIsDown() bool {
+func (rr *Reactor) GetSafeReportCount() int {
+	safeCount := 0
+
+	for _, report := range rr.Reports {
+		// Check the original report first, if its safe, increment the safeCount and continue
+		safe := report.IsSafe()
+		if safe {
+			safeCount++
+			continue
+		}
+
+		// Remove each element from the report, and then check if it's safe
+		// If it's safe, we found a safe permutation, increment the safeCount
+		for i := 0; i < len(report.OriginalLevel); i++ {
+			report.RemoveLevelAtIndex(i)
+			safe = report.IsSafe()
+			if safe {
+				safeCount++
+				break
+			}
+		}
+	}
+
+	return safeCount
+}
+
+type ReactorReport struct {
+	OriginalLevel []int
+	Levels        []int
+	Direction     int
+}
+
+func NewReactorReport(levels []int) *ReactorReport {
+	dir := levels[1] - levels[0]
+	return &ReactorReport{Levels: levels, Direction: dir, OriginalLevel: levels}
+}
+
+func (rl *ReactorReport) DirectionIsDown() bool {
 	return rl.Direction < 0
 }
 
-func (rl *ReactorLevel) DifferenceMoreThan(index1, index2, diff int) bool {
-	return int(math.Abs(float64(rl.Level[index1]-rl.Level[index2]))) > diff
+func (rl *ReactorReport) RecalculateDirection() {
+	rl.Direction = rl.Levels[1] - rl.Levels[0]
 }
 
-func (rl *ReactorLevel) IsSafe() bool {
+func (rl *ReactorReport) DifferenceMoreThan(index1, index2, diff int) bool {
+	return int(math.Abs(float64(rl.Levels[index1]-rl.Levels[index2]))) > diff
+}
+
+func (rl *ReactorReport) RemoveLevelAtIndex(index int) {
+	copyOfOriginal := make([]int, len(rl.OriginalLevel))
+	copy(copyOfOriginal, rl.OriginalLevel)
+	rl.Levels = append(copyOfOriginal[:index], copyOfOriginal[index+1:]...)
+	rl.RecalculateDirection()
+}
+
+func (rl *ReactorReport) IsSafe() bool {
 	// Exit early, difference is 0 and thats not safe
 	if rl.Direction == 0 {
 		return false
 	}
 	// Exit early, difference is already more than 3
-	if rl.DifferenceMoreThan(1, 2, 3) {
+	if rl.DifferenceMoreThan(0, 1, 3) {
 		return false
 	}
 
 	levelSafe := true
-	for j, report := range rl.Level {
-		// Skip the first report, we already have the direction
+
+	for j, level := range rl.Levels {
+		// Skip the first level, we already have the direction
 		if j == 0 {
 			continue
 		}
-		if (report == rl.Level[j-1]) || rl.DifferenceMoreThan(j, j-1, 3) {
-			// If the report is the same as the previous report, or the difference is more than 3
+		if (level == rl.Levels[j-1]) || rl.DifferenceMoreThan(j, j-1, 3) {
+			// If the level is the same as the previous level, or the difference is more than 3
 			// Then the level is unsafe, so break
-			levelSafe = false
-			break
+			return false
 		}
 		if rl.DirectionIsDown() {
-			// Direction is negative, so subsequent reports should be decreasing
+			// Direction is negative, so subsequent levels should be decreasing
 			// So if it's not, mark the level as unsafe and break
-			if report > rl.Level[j-1] {
-				levelSafe = false
-				break
+			if level > rl.Levels[j-1] {
+				return false
 			}
 		} else {
-			// Direction is positive, so subsequent reports should be increasing
+			// Direction is positive, so subsequent levels should be increasing
 			// So if it's not, mark the level as unsafe and break
-			if report < rl.Level[j-1] {
-				levelSafe = false
-				break
+			if level < rl.Levels[j-1] {
+				return false
 			}
 		}
 	}
@@ -77,9 +121,10 @@ func main() {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	var levels [][]int
+	reactor := Reactor{}
+
 	for scanner.Scan() {
-		var reports []int
+		var levels []int
 		line := scanner.Text()
 		fields := strings.Fields(line)
 
@@ -89,20 +134,12 @@ func main() {
 				fmt.Println("Error converting to integer:", err)
 				return
 			}
-			reports = append(reports, num)
+			levels = append(levels, num)
 		}
-		levels = append(levels, reports)
-
+		reactor.AddReport(NewReactorReport(levels))
 	}
 
-	safeCount := 0
-
-	for _, level := range levels {
-		rl := NewReactorLevel(level)
-		if rl.IsSafe() {
-			safeCount++
-		}
-	}
+	safeCount := reactor.GetSafeReportCount()
 
 	fmt.Print(safeCount)
 }
