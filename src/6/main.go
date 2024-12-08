@@ -113,7 +113,7 @@ func (pl *Plotter) Move() (bool, error) {
 			pl.xDir = 1
 			pl.yDir = 0
 		} else if pl.IsOffGrid(newPos) {
-			return false, fmt.Errorf("Guard has gone off the grid")
+			return false, fmt.Errorf("guard has gone off the grid")
 		} else {
 			// Move Up
 			pl.guardPos = newPos
@@ -127,7 +127,7 @@ func (pl *Plotter) Move() (bool, error) {
 			pl.xDir = 0
 			pl.yDir = -1
 		} else if pl.IsOffGrid(newPos) {
-			return false, fmt.Errorf("Guard has gone off the grid")
+			return false, fmt.Errorf("guard has gone off the grid")
 		} else {
 			// Move Right
 			pl.guardPos = newPos
@@ -141,7 +141,7 @@ func (pl *Plotter) Move() (bool, error) {
 			pl.xDir = -1
 			pl.yDir = 0
 		} else if pl.IsOffGrid(newPos) {
-			return false, fmt.Errorf("Guard has gone off the grid")
+			return false, fmt.Errorf("guard has gone off the grid")
 		} else {
 			// Move Down
 			pl.guardPos = newPos
@@ -155,7 +155,7 @@ func (pl *Plotter) Move() (bool, error) {
 			pl.xDir = 0
 			pl.yDir = 1
 		} else if pl.IsOffGrid(newPos) {
-			return false, fmt.Errorf("Guard has gone off the grid")
+			return false, fmt.Errorf("guard has gone off the grid")
 		} else {
 			// Move Left
 			pl.guardPos = newPos
