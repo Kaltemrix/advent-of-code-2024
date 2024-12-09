@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -40,26 +41,40 @@ func main() {
 	blockMapCompressed := make([]string, len(blockMap))
 	copy(blockMapCompressed, blockMap)
 
+	sizeOfComparingBlock := 0
 	for i := len(blockMapCompressed) - 1; i > 0; i-- {
 		if blockMapCompressed[i] == "." {
 			continue
 		}
-		indexOfDot := 0
-		for j := 0; j < len(blockMapCompressed); j++ {
-			if blockMapCompressed[j] == "." {
-				indexOfDot = j
-				break
-			}
-		}
-		// If the dot is after i, we're at the end of the blockMap, and don't need to do anything
-		if indexOfDot >= i {
-			break
-		}
 
-		// Replace the dot with the number
-		blockMapCompressed[indexOfDot] = blockMapCompressed[i]
-		// Replace the number with a dot
-		blockMapCompressed[i] = "."
+		sizeOfComparingBlock++
+
+		thisString := blockMapCompressed[i]
+		nextString := blockMapCompressed[i-1]
+		if nextString == "." || nextString != thisString {
+			sliceToMove := blockMapCompressed[i : i+sizeOfComparingBlock]
+
+			dotSlice, err := FindConsecutiveDotSliceOfSize(blockMapCompressed, sizeOfComparingBlock)
+			if err != nil {
+				sizeOfComparingBlock = 0
+				continue
+			}
+
+			if dotSlice[0] >= i {
+				sizeOfComparingBlock = 0
+				continue
+			}
+
+			for j, c := range sliceToMove {
+				blockMapCompressed[dotSlice[0]+j] = c
+			}
+			for j := 0; j < sizeOfComparingBlock; j++ {
+				blockMapCompressed[i+j] = "."
+			}
+			sizeOfComparingBlock = 0
+		} else {
+			continue
+		}
 	}
 
 	checksum := 0
@@ -75,7 +90,24 @@ func main() {
 	}
 
 	fmt.Println(checksum)
+}
 
-	// fmt.Println(blockMapCompressed[:10])
-	// fmt.Println(blockMap[:10])
+func FindConsecutiveDotSliceOfSize(blockMapCompressed []string, size int) ([2]int, error) {
+	currentSize := 0
+	for i := 0; i < len(blockMapCompressed); i++ {
+		if blockMapCompressed[i] == "." {
+			if currentSize == size {
+				return [2]int{i - size, i}, nil
+			}
+		}
+		if blockMapCompressed[i] != "." {
+			if currentSize == size {
+				return [2]int{i - size, i}, nil
+			}
+			currentSize = 0
+			continue
+		}
+		currentSize++
+	}
+	return [2]int{}, errors.New("no consecutive slice of dots found")
 }
