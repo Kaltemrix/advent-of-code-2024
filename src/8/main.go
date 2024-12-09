@@ -58,20 +58,36 @@ func (am *AntennaMap) DrawAndPlaceNodes(pair [2][2]int) {
 	width := pair[1][0] - pair[0][0]
 	height := pair[1][1] - pair[0][1]
 
-	firstLocation := [2]int{pair[0][0] - width, pair[0][1] - height}
-	secondLocation := [2]int{pair[1][0] + width, pair[1][1] + height}
-
-	if valid := am.CheckBounds(firstLocation); valid {
-		if !slices.Contains(am.UniqueAntinodeLocations, firstLocation) {
-			am.UniqueAntinodeLocations = append(am.UniqueAntinodeLocations, firstLocation)
+	higherLocations := [][2]int{}
+	for {
+		location := [2]int{pair[1][0] - width*(len(higherLocations)+1), pair[1][1] - height*(len(higherLocations)+1)}
+		if valid := am.CheckBounds(location); valid {
+			higherLocations = append(higherLocations, location)
+		} else {
+			break
 		}
 	}
-	if valid := am.CheckBounds(secondLocation); valid {
-		if !slices.Contains(am.UniqueAntinodeLocations, secondLocation) {
-			am.UniqueAntinodeLocations = append(am.UniqueAntinodeLocations, secondLocation)
+	lowerLocations := [][2]int{}
+	for {
+		location := [2]int{pair[0][0] + width*(len(lowerLocations)+1), pair[0][1] + height*(len(lowerLocations)+1)}
+		if valid := am.CheckBounds(location); valid {
+			lowerLocations = append(lowerLocations, location)
+		} else {
+			break
 		}
 	}
 
+	// Append unique antinode locations
+	for _, location := range higherLocations {
+		if !slices.Contains(am.UniqueAntinodeLocations, location) {
+			am.UniqueAntinodeLocations = append(am.UniqueAntinodeLocations, location)
+		}
+	}
+	for _, location := range lowerLocations {
+		if !slices.Contains(am.UniqueAntinodeLocations, location) {
+			am.UniqueAntinodeLocations = append(am.UniqueAntinodeLocations, location)
+		}
+	}
 }
 
 func (am *AntennaMap) CheckBounds(location [2]int) bool {
